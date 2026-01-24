@@ -13,49 +13,54 @@
 ## 🏗️ Phase 1: 项目基础设施 (Foundation)
 
 ### 1.1 依赖安装
-- [ ] 安装 Zustand 状态管理库
-- [ ] 安装 expo-sqlite 本地数据库
-- [ ] 安装 React Native Paper UI 组件库
-- [ ] 安装 react-native-safe-area-context (Paper 依赖)
-- [ ] 安装 uuid 生成唯一 ID
+- [x] 安装 Zustand 状态管理库
+- [x] 安装 expo-sqlite 本地数据库
+- [x] 安装 React Native Paper UI 组件库
+- [x] 安装 react-native-safe-area-context (Paper 依赖)
+- [x] 安装 uuid 生成唯一 ID
 
 ### 1.2 主题配置
-- [ ] 根据 DESIGN-SYSTEM.md 配置 Design Tokens
-  - [ ] 颜色系统 (Primary, Success, Danger 等)
-  - [ ] 排版系统 (Typography)
-  - [ ] 间距系统 (Spacing)
-  - [ ] 圆角系统 (Radius)
-- [ ] 配置 React Native Paper 主题
-- [ ] 创建 Light/Dark 主题切换支持
+- [x] 根据 DESIGN-SYSTEM.md 配置 Design Tokens
+  - [x] 颜色系统 (Primary, Success, Danger 等)
+  - [x] 排版系统 (Typography)
+  - [x] 间距系统 (Spacing)
+  - [x] 圆角系统 (Radius)
+  - [x] 阴影系统 (Shadows)
+- [x] 配置 React Native Paper 主题
+- [x] 创建 Light/Dark 主题切换支持
 
 ### 1.3 项目结构
-- [ ] 创建 `stores/` 目录 (Zustand stores)
-- [ ] 创建 `services/` 目录 (数据库服务)
-- [ ] 创建 `types/` 目录 (TypeScript 类型定义)
-- [ ] 创建 `utils/` 目录 (工具函数)
-- [ ] 清理 Expo 模板无用代码 (手动清理，不使用 reset 脚本)
-  - [ ] 删除 `components/hello-wave.tsx`
-  - [ ] 删除 `components/parallax-scroll-view.tsx`
-  - [ ] 删除 `components/external-link.tsx`
-  - [ ] 删除 `components/ui/collapsible.tsx`
-  - [ ] 删除 `app/(tabs)/explore.tsx`
-  - [ ] 删除 `app/modal.tsx`
-  - [ ] 重写 `app/(tabs)/index.tsx` (首页)
-  - [ ] 重写 `app/(tabs)/_layout.tsx` (Tab 导航)
-  - [ ] 重写 `app/_layout.tsx` (根布局)
-  - [ ] 保留并扩展 `constants/theme.ts`
-  - [ ] 保留 `hooks/use-color-scheme.ts`
-  - [ ] 保留 `components/themed-*.tsx` (可选重构)
+- [x] 创建 `src/services/` 目录 (数据库服务)
+- [x] 创建 `src/types/` 目录 (TypeScript 类型定义)
+- [x] 创建 `src/utils/` 目录 (工具函数)
+- [x] 创建 `src/components/` 目录 (可复用组件)
+- [x] 创建 `src/hooks/` 目录 (自定义 Hooks)
 
 ---
 
 ## 💾 Phase 2: 数据层 (Data Layer)
 
+> 📝 **设计说明**: 数据模型预留多账本支持，MVP 阶段使用默认账本，后续可无缝扩展
+
 ### 2.1 类型定义
-- [ ] 定义 `Transaction` 类型 (收支条目)
+- [x] 定义 `Ledger` 类型 (账本 - 为多账本预留)
+  ```typescript
+  interface Ledger {
+    id: string;           // UUID
+    name: string;         // 账本名称
+    icon: string;         // 图标标识 (emoji 或首字符)
+    color: string;        // 主题色 (hex)
+    is_default: boolean;  // 是否为默认账本
+    sort_order: number;   // 排序
+    created_at: string;
+    updated_at: string;
+  }
+  ```
+- [x] 定义 `Transaction` 类型 (收支条目)
   ```typescript
   interface Transaction {
     id: string;           // UUID
+    ledger_id: string;    // 所属账本 ID (外键)
     type: 'income' | 'expense';
     amount: number;
     category_id: string;
@@ -65,7 +70,7 @@
     updated_at: string;
   }
   ```
-- [ ] 定义 `Category` 类型 (分类)
+- [x] 定义 `Category` 类型 (分类 - 全局共享)
   ```typescript
   interface Category {
     id: string;
@@ -81,21 +86,26 @@
   ```
 
 ### 2.2 数据库服务
-- [ ] 初始化 SQLite 数据库
-- [ ] 创建 `transactions` 表
-- [ ] 创建 `categories` 表
-- [ ] 实现数据库迁移机制
-- [ ] 预置系统默认分类数据
+- [x] 初始化 SQLite 数据库
+- [x] 创建 `ledgers` 表 (预留多账本)
+- [x] 创建 `transactions` 表 (含 `ledger_id` 外键)
+- [x] 创建 `categories` 表 (全局共享，不绑定账本)
+- [x] 实现数据库迁移机制
+- [x] 初始化默认账本 ("默认账本", is_default=true)
+- [x] 预置系统默认分类数据 (采用 JSON 配置 + 启动同步方案)
   - 支出: 餐饮、交通、购物、居住、娱乐、医疗、教育、人情
   - 收入: 工资、奖金、投资收益、其他
 
 ### 2.3 Zustand Store
+- [ ] 创建 `ledgerStore` (账本管理 - MVP 简化版)
+  - [ ] `currentLedgerId` - 当前账本 ID
+  - [ ] `getDefaultLedger()` - 获取默认账本
 - [ ] 创建 `transactionStore` (条目管理)
-  - [ ] `addTransaction()` - 添加条目
+  - [ ] `addTransaction()` - 添加条目 (自动关联当前账本)
   - [ ] `updateTransaction()` - 更新条目
   - [ ] `deleteTransaction()` - 删除条目
-  - [ ] `getTransactionsByMonth()` - 按月查询
-- [ ] 创建 `categoryStore` (分类管理)
+  - [ ] `getTransactionsByMonth()` - 按月查询 (当前账本)
+- [ ] 创建 `categoryStore` (分类管理 - 全局)
   - [ ] `getActiveCategories()` - 获取启用分类
   - [ ] `addCategory()` - 新增分类
   - [ ] `updateCategory()` - 更新分类
@@ -188,9 +198,9 @@
 ## 🧹 Phase 6: 收尾完善 (Polish)
 
 ### 6.1 导航配置
-- [ ] 更新 Tab 导航 (移除 Explore, 保留首页)
-- [ ] 添加 `/add-transaction` 路由
-- [ ] 添加 `/category-management` 路由
+- [ ] 配置路由结构 (Expo Router file-based routing)
+- [ ] 添加 `app/add-transaction.tsx` 记账页面路由
+- [ ] 添加 `app/category-management.tsx` 分类管理页面路由
 
 ### 6.2 用户体验
 - [ ] 添加 Haptic 反馈 (按钮点击、拖拽等)
