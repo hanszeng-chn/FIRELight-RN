@@ -1,15 +1,48 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { Appearance, useColorScheme } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Appearance, useColorScheme, Alert } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
+import * as SplashScreen from 'expo-splash-screen';
 
 import { useThemeStore } from '@/src/stores/themeStore';
 import { darkTheme, lightTheme } from '@/src/theme';
+import { initDatabase } from '@/src/services/database';
+
+// 保持启动页可见，直到我们通知它隐藏
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [appIsReady, setAppIsReady] = useState(false);
   const systemColorScheme = useColorScheme();
   const { mode, isDark, syncWithSystem } = useThemeStore();
+
+  // App 初始化流程
+  useEffect(() => {
+    async function prepare() {
+      try {
+        // 使用 Promise.all 并行处理所有异步初始化任务
+        // 未来可以在数组中加入 loadFonts(), checkAuth() 等
+        await Promise.all([
+          initDatabase(),
+          // new Promise(resolve => setTimeout(resolve, 2000)) // 模拟耗时操作测试 Splash Screen
+        ]);
+      } catch (e) {
+        console.error('Initialization failed:', e);
+        // 生产环境建议：在这里上报错误日志监控
+        Alert.alert(
+          "启动失败",
+          "数据库初始化遇到问题，请尝试重启应用。",
+          [{ text: "OK" }]
+        );
+      } finally {
+        setAppIsReady(true);
+        await SplashScreen.hideAsync();
+      }
+    }
+
+    prepare();
+  }, []);
 
   // 监听系统主题变化
   useEffect(() => {
@@ -28,6 +61,11 @@ export default function RootLayout() {
   }, [systemColorScheme, mode, syncWithSystem]);
 
   const theme = isDark ? darkTheme : lightTheme;
+
+  // 在 App 准备好之前，不渲染任何组件（此时用户看到的是 Splash Screen）
+  if (!appIsReady) {
+    return null;
+  }
 
   return (
     <PaperProvider theme={theme}>
