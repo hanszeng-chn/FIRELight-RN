@@ -8,12 +8,12 @@
  * - 同步系统分类（每次启动）
  */
 
-import { SYSTEM_CATEGORIES } from '@/src/config/systemCategories';
-import { generateUUID } from '@/src/utils/uuid';
-import * as SQLite from 'expo-sqlite';
+import { SYSTEM_CATEGORIES } from "@/src/config/systemCategories";
+import { generateUUID } from "@/src/utils/uuid";
+import * as SQLite from "expo-sqlite";
 
 // 数据库配置
-const DATABASE_NAME = 'firelight.db';
+const DATABASE_NAME = "firelight.db";
 const SCHEMA_VERSION = 1;
 
 // 数据库实例
@@ -25,7 +25,7 @@ let db: SQLite.SQLiteDatabase | null = null;
  */
 export const getDatabase = (): SQLite.SQLiteDatabase => {
   if (!db) {
-    throw new Error('Database not initialized. Call initDatabase() first.');
+    throw new Error("Database not initialized. Call initDatabase() first.");
   }
   return db;
 };
@@ -35,11 +35,11 @@ export const getDatabase = (): SQLite.SQLiteDatabase => {
  * App 启动时调用此函数
  */
 export const initDatabase = async (): Promise<void> => {
-  console.log('[Database] Initializing...');
+  console.log("[Database] Initializing...");
 
   // 1. 打开数据库
-  db = SQLite.openDatabaseSync(DATABASE_NAME);
-  console.log('[Database] Opened database:', DATABASE_NAME);
+  db = await SQLite.openDatabaseAsync(DATABASE_NAME);
+  console.log("[Database] Opened database:", DATABASE_NAME);
 
   // 2. 执行迁移
   await runMigrations();
@@ -50,7 +50,7 @@ export const initDatabase = async (): Promise<void> => {
   // 4. 同步系统分类
   await syncSystemCategories();
 
-  console.log('[Database] Initialization complete');
+  console.log("[Database] Initialization complete");
 };
 
 /**
@@ -60,7 +60,7 @@ export const closeDatabase = (): void => {
   if (db) {
     db.closeSync();
     db = null;
-    console.log('[Database] Closed');
+    console.log("[Database] Closed");
   }
 };
 
@@ -69,20 +69,20 @@ export const closeDatabase = (): void => {
  * 根据版本号执行增量迁移脚本
  */
 const runMigrations = async (): Promise<void> => {
-  const result = db!.getFirstSync<{ user_version: number }>(
-    'PRAGMA user_version'
+  const result = await db!.getFirstAsync<{ user_version: number }>(
+    "PRAGMA user_version",
   );
   const currentVersion = result?.user_version ?? 0;
 
   console.log(
-    `[Database] Current version: ${currentVersion}, target version: ${SCHEMA_VERSION}`
+    `[Database] Current version: ${currentVersion}, target version: ${SCHEMA_VERSION}`,
   );
 
   // 版本 1：初始表结构
   if (currentVersion < 1) {
-    console.log('[Database] Running migration v1: Initial schema');
+    console.log("[Database] Running migration v1: Initial schema");
 
-    db!.execSync(`
+    await db!.execAsync(`
       -- 账本表
       CREATE TABLE IF NOT EXISTS ledgers (
         id TEXT PRIMARY KEY,
@@ -131,7 +131,7 @@ const runMigrations = async (): Promise<void> => {
         ON categories(type, is_active);
     `);
 
-    console.log('[Database] Migration v1 complete');
+    console.log("[Database] Migration v1 complete");
   }
 
   // 未来版本迁移在这里添加...
@@ -139,7 +139,7 @@ const runMigrations = async (): Promise<void> => {
 
   // 更新版本号
   if (currentVersion < SCHEMA_VERSION) {
-    db!.execSync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
+    await db!.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
     console.log(`[Database] Updated to version ${SCHEMA_VERSION}`);
   }
 };
@@ -149,25 +149,25 @@ const runMigrations = async (): Promise<void> => {
  * 仅在首次运行时创建
  */
 const initDefaultLedger = async (): Promise<void> => {
-  const existing = db!.getFirstSync<{ id: string }>(
-    'SELECT id FROM ledgers WHERE is_default = 1'
+  const existing = await db!.getFirstAsync<{ id: string }>(
+    "SELECT id FROM ledgers WHERE is_default = 1",
   );
 
   if (existing) {
-    console.log('[Database] Default ledger already exists:', existing.id);
+    console.log("[Database] Default ledger already exists:", existing.id);
     return;
   }
 
   const now = new Date().toISOString();
   const id = generateUUID();
 
-  db!.runSync(
+  await db!.runAsync(
     `INSERT INTO ledgers (id, name, icon, color, is_default, sort_order, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [id, '默认账本', '📒', '#6366F1', 1, 0, now, now]
+    [id, "默认账本", "📒", "#6366F1", 1, 0, now, now],
   );
 
-  console.log('[Database] Created default ledger:', id);
+  console.log("[Database] Created default ledger:", id);
 };
 
 /**
@@ -181,13 +181,13 @@ const initDefaultLedger = async (): Promise<void> => {
  */
 const syncSystemCategories = async (): Promise<void> => {
   console.log(
-    `[Database] Syncing ${SYSTEM_CATEGORIES.length} system categories...`
+    `[Database] Syncing ${SYSTEM_CATEGORIES.length} system categories...`,
   );
 
   const now = new Date().toISOString();
 
   for (const cat of SYSTEM_CATEGORIES) {
-    db!.runSync(
+    await db!.runAsync(
       `INSERT INTO categories (id, name, icon, type, is_system, is_active, sort_order, deprecated, created_at, updated_at)
        VALUES (?, ?, ?, ?, 1, 1, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET 
@@ -205,23 +205,23 @@ const syncSystemCategories = async (): Promise<void> => {
         cat.deprecated ? 1 : 0,
         now,
         now,
-      ]
+      ],
     );
   }
 
-  console.log('[Database] System categories synced');
+  console.log("[Database] System categories synced");
 };
 
 /**
  * 获取默认账本 ID
  */
-export const getDefaultLedgerId = (): string => {
-  const result = db!.getFirstSync<{ id: string }>(
-    'SELECT id FROM ledgers WHERE is_default = 1'
+export const getDefaultLedgerId = async (): Promise<string> => {
+  const result = await db!.getFirstAsync<{ id: string }>(
+    "SELECT id FROM ledgers WHERE is_default = 1",
   );
 
   if (!result) {
-    throw new Error('Default ledger not found');
+    throw new Error("Default ledger not found");
   }
 
   return result.id;

@@ -11,10 +11,10 @@ import { getDatabase, getDefaultLedgerId } from './database';
 /**
  * 获取默认账本
  */
-export const getDefaultLedger = (): Ledger | null => {
+export const getDefaultLedger = async (): Promise<Ledger | null> => {
   const db = getDatabase();
 
-  const result = db.getFirstSync<Ledger>(
+  const result = await db.getFirstAsync<Ledger>(
     'SELECT * FROM ledgers WHERE is_default = 1'
   );
 
@@ -32,10 +32,10 @@ export const getDefaultLedger = (): Ledger | null => {
 /**
  * 获取所有账本
  */
-export const getAllLedgers = (): Ledger[] => {
+export const getAllLedgers = async (): Promise<Ledger[]> => {
   const db = getDatabase();
 
-  const results = db.getAllSync<Ledger>(
+  const results = await db.getAllAsync<Ledger>(
     'SELECT * FROM ledgers ORDER BY sort_order ASC'
   );
 
@@ -49,10 +49,10 @@ export const getAllLedgers = (): Ledger[] => {
 /**
  * 根据 ID 获取账本
  */
-export const getLedgerById = (id: string): Ledger | null => {
+export const getLedgerById = async (id: string): Promise<Ledger | null> => {
   const db = getDatabase();
 
-  const result = db.getFirstSync<Ledger>(
+  const result = await db.getFirstAsync<Ledger>(
     'SELECT * FROM ledgers WHERE id = ?',
     [id]
   );
@@ -70,12 +70,12 @@ export const getLedgerById = (id: string): Ledger | null => {
 /**
  * 创建账本
  */
-export const createLedger = (input: CreateLedgerInput): Ledger => {
+export const createLedger = async (input: CreateLedgerInput): Promise<Ledger> => {
   const db = getDatabase();
   const now = new Date().toISOString();
   const id = generateUUID();
 
-  db.runSync(
+  await db.runAsync(
     `INSERT INTO ledgers (id, name, icon, color, is_default, sort_order, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -101,10 +101,10 @@ export const createLedger = (input: CreateLedgerInput): Ledger => {
 /**
  * 更新账本
  */
-export const updateLedger = (
+export const updateLedger = async (
   id: string,
   input: UpdateLedgerInput
-): Ledger | null => {
+): Promise<Ledger | null> => {
   const db = getDatabase();
   const now = new Date().toISOString();
 
@@ -141,7 +141,7 @@ export const updateLedger = (
   values.push(now);
   values.push(id);
 
-  db.runSync(
+  await db.runAsync(
     `UPDATE ledgers SET ${fields.join(', ')} WHERE id = ?`,
     values
   );
@@ -153,11 +153,11 @@ export const updateLedger = (
  * 删除账本
  * 注意：不能删除默认账本
  */
-export const deleteLedger = (id: string): boolean => {
+export const deleteLedger = async (id: string): Promise<boolean> => {
   const db = getDatabase();
 
   // 检查是否为默认账本
-  const ledger = getLedgerById(id);
+  const ledger = await getLedgerById(id);
   if (!ledger) {
     return false;
   }
@@ -166,7 +166,7 @@ export const deleteLedger = (id: string): boolean => {
   }
 
   // 检查是否有关联的交易
-  const transactionCount = db.getFirstSync<{ count: number }>(
+  const transactionCount = await db.getFirstAsync<{ count: number }>(
     'SELECT COUNT(*) as count FROM transactions WHERE ledger_id = ?',
     [id]
   );
@@ -177,7 +177,7 @@ export const deleteLedger = (id: string): boolean => {
     );
   }
 
-  db.runSync('DELETE FROM ledgers WHERE id = ?', [id]);
+  await db.runAsync('DELETE FROM ledgers WHERE id = ?', [id]);
   return true;
 };
 

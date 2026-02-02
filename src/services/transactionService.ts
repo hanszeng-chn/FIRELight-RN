@@ -62,15 +62,15 @@ export interface MonthlyStats {
 /**
  * 创建交易
  */
-export const createTransaction = (
+export const createTransaction = async (
   input: Omit<CreateTransactionInput, 'ledger_id'> & { ledger_id?: string }
-): Transaction => {
+): Promise<Transaction> => {
   const db = getDatabase();
   const now = new Date().toISOString();
   const id = generateUUID();
-  const ledgerId = input.ledger_id || getDefaultLedgerId();
+  const ledgerId = input.ledger_id || (await getDefaultLedgerId());
 
-  db.runSync(
+  await db.runAsync(
     `INSERT INTO transactions (id, ledger_id, type, amount, category_id, date, note, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -102,10 +102,10 @@ export const createTransaction = (
 /**
  * 根据 ID 获取交易
  */
-export const getTransactionById = (id: string): Transaction | null => {
+export const getTransactionById = async (id: string): Promise<Transaction | null> => {
   const db = getDatabase();
 
-  return db.getFirstSync<Transaction>(
+  return db.getFirstAsync<Transaction>(
     'SELECT * FROM transactions WHERE id = ?',
     [id]
   );
@@ -114,9 +114,9 @@ export const getTransactionById = (id: string): Transaction | null => {
 /**
  * 获取交易列表
  */
-export const getTransactions = (filter: TransactionFilter = {}): Transaction[] => {
+export const getTransactions = async (filter: TransactionFilter = {}): Promise<Transaction[]> => {
   const db = getDatabase();
-  const ledgerId = filter.ledgerId || getDefaultLedgerId();
+  const ledgerId = filter.ledgerId || (await getDefaultLedgerId());
 
   const conditions: string[] = ['ledger_id = ?'];
   const params: (string | number)[] = [ledgerId];
@@ -153,7 +153,7 @@ export const getTransactions = (filter: TransactionFilter = {}): Transaction[] =
 
   const whereClause = conditions.join(' AND ');
 
-  return db.getAllSync<Transaction>(
+  return db.getAllAsync<Transaction>(
     `SELECT * FROM transactions WHERE ${whereClause} ORDER BY date DESC, created_at DESC`,
     params
   );
@@ -162,12 +162,12 @@ export const getTransactions = (filter: TransactionFilter = {}): Transaction[] =
 /**
  * 按月份获取交易（按日期分组）
  */
-export const getTransactionsByMonth = (
+export const getTransactionsByMonth = async (
   year: number,
   month: number,
   ledgerId?: string
-): TransactionsByDate[] => {
-  const transactions = getTransactions({
+): Promise<TransactionsByDate[]> => {
+  const transactions = await getTransactions({
     ledgerId,
     year,
     month,
@@ -214,17 +214,17 @@ export const getTransactionsByMonth = (
 /**
  * 获取月度统计
  */
-export const getMonthlyStats = (
+export const getMonthlyStats = async (
   year: number,
   month: number,
   ledgerId?: string
-): MonthlyStats => {
+): Promise<MonthlyStats> => {
   const db = getDatabase();
-  const actualLedgerId = ledgerId || getDefaultLedgerId();
+  const actualLedgerId = ledgerId || (await getDefaultLedgerId());
   const monthStr = String(month).padStart(2, '0');
   const datePrefix = `${year}-${monthStr}`;
 
-  const result = db.getFirstSync<{
+  const result = await db.getFirstAsync<{
     total_income: number | null;
     total_expense: number | null;
     tx_count: number;
@@ -248,10 +248,10 @@ export const getMonthlyStats = (
 /**
  * 更新交易
  */
-export const updateTransaction = (
+export const updateTransaction = async (
   id: string,
   input: UpdateTransactionInput
-): Transaction | null => {
+): Promise<Transaction | null> => {
   const db = getDatabase();
   const now = new Date().toISOString();
 
@@ -287,7 +287,7 @@ export const updateTransaction = (
   values.push(now);
   values.push(id);
 
-  db.runSync(
+  await db.runAsync(
     `UPDATE transactions SET ${fields.join(', ')} WHERE id = ?`,
     values
   );
@@ -298,15 +298,15 @@ export const updateTransaction = (
 /**
  * 删除交易
  */
-export const deleteTransaction = (id: string): boolean => {
+export const deleteTransaction = async (id: string): Promise<boolean> => {
   const db = getDatabase();
 
-  const existing = getTransactionById(id);
+  const existing = await getTransactionById(id);
   if (!existing) {
     return false;
   }
 
-  db.runSync('DELETE FROM transactions WHERE id = ?', [id]);
+  await db.runAsync('DELETE FROM transactions WHERE id = ?', [id]);
   return true;
 };
 
@@ -314,11 +314,11 @@ export const deleteTransaction = (id: string): boolean => {
  * 获取有数据的月份列表
  * 返回格式：['2024-01', '2024-02', ...]
  */
-export const getMonthsWithData = (ledgerId?: string): string[] => {
+export const getMonthsWithData = async (ledgerId?: string): Promise<string[]> => {
   const db = getDatabase();
-  const actualLedgerId = ledgerId || getDefaultLedgerId();
+  const actualLedgerId = ledgerId || (await getDefaultLedgerId());
 
-  const results = db.getAllSync<{ month: string }>(
+  const results = await db.getAllAsync<{ month: string }>(
     `SELECT DISTINCT substr(date, 1, 7) as month 
      FROM transactions 
      WHERE ledger_id = ?
@@ -333,13 +333,13 @@ export const getMonthsWithData = (ledgerId?: string): string[] => {
  * 获取最近一条交易的月份
  * 用于首页默认显示最新有数据的月份
  */
-export const getLatestTransactionMonth = (
+export const getLatestTransactionMonth = async (
   ledgerId?: string
-): { year: number; month: number } | null => {
+): Promise<{ year: number; month: number } | null> => {
   const db = getDatabase();
-  const actualLedgerId = ledgerId || getDefaultLedgerId();
+  const actualLedgerId = ledgerId || (await getDefaultLedgerId());
 
-  const result = db.getFirstSync<{ date: string }>(
+  const result = await db.getFirstAsync<{ date: string }>(
     `SELECT date FROM transactions 
      WHERE ledger_id = ?
      ORDER BY date DESC 
