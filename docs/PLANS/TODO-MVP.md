@@ -97,21 +97,21 @@
   - 收入: 工资、奖金、投资收益、其他
 
 ### 2.3 Zustand Store
-- [ ] 创建 `ledgerStore` (账本管理 - MVP 简化版)
-  - [ ] `currentLedgerId` - 当前账本 ID
-  - [ ] `getDefaultLedger()` - 获取默认账本
-- [ ] 创建 `transactionStore` (条目管理)
-  - [ ] `addTransaction()` - 添加条目 (自动关联当前账本)
-  - [ ] `updateTransaction()` - 更新条目
-  - [ ] `deleteTransaction()` - 删除条目
-  - [ ] `getTransactionsByMonth()` - 按月查询 (当前账本)
-- [ ] 创建 `categoryStore` (分类管理 - 全局)
-  - [ ] `getActiveCategories()` - 获取启用分类
-  - [ ] `addCategory()` - 新增分类
-  - [ ] `updateCategory()` - 更新分类
-  - [ ] `toggleCategoryStatus()` - 启用/停用
-  - [ ] `reorderCategories()` - 排序
-  - [ ] `cleanupUnusedCategories()` - 自动清理
+- [x] 创建 `ledgerStore` (账本管理 - MVP 简化版)
+  - [x] `currentLedgerId` - 当前账本 ID
+  - [x] `getDefaultLedger()` - 获取默认账本
+- [x] 创建 `transactionStore` (条目管理)
+  - [x] `addTransaction()` - 添加条目 (自动关联当前账本)
+  - [x] `updateTransaction()` - 更新条目
+  - [x] `deleteTransaction()` - 删除条目
+  - [x] `getTransactionsByMonth()` - 按月查询 (当前账本)
+- [x] 创建 `categoryStore` (分类管理 - 全局)
+  - [x] `getActiveCategories()` - 获取启用分类
+  - [x] `addCategory()` - 新增分类
+  - [x] `updateCategory()` - 更新分类
+  - [x] `toggleCategoryStatus()` - 启用/停用
+  - [x] `reorderCategories()` - 排序
+  - [x] `cleanupUnusedCategories()` - 自动清理
 
 ---
 
