@@ -1,13 +1,15 @@
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Appearance, useColorScheme, Alert } from 'react-native';
-import { PaperProvider } from 'react-native-paper';
-import * as SplashScreen from 'expo-splash-screen';
+import { Alert, Appearance, useColorScheme } from 'react-native';
 
-import { useThemeStore } from '@/src/stores/themeStore';
-import { darkTheme, lightTheme } from '@/src/theme';
 import { initDatabase } from '@/src/services/database';
+import { useThemeStore } from '@/src/stores/themeStore';
+import { colors } from '@/src/theme';
+
+import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import '../global.css';
 
 // 保持启动页可见，直到我们通知它隐藏
 SplashScreen.preventAutoHideAsync();
@@ -60,7 +62,7 @@ export default function RootLayout() {
     }
   }, [systemColorScheme, mode, syncWithSystem]);
 
-  const theme = isDark ? darkTheme : lightTheme;
+  const palette = isDark ? colors.dark : colors.light;
 
   // 在 App 准备好之前，不渲染任何组件（此时用户看到的是 Splash Screen）
   if (!appIsReady) {
@@ -68,22 +70,22 @@ export default function RootLayout() {
   }
 
   return (
-    <PaperProvider theme={theme}>
+    <GluestackUIProvider mode={isDark ? 'dark' : 'light'}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: theme.colors.surface,
+            backgroundColor: palette.backgroundSecondary,
           },
-          headerTintColor: theme.colors.onSurface,
+          headerTintColor: palette.textPrimary,
           headerTitleStyle: {
             fontWeight: '600',
           },
           contentStyle: {
-            backgroundColor: theme.colors.background,
+            backgroundColor: palette.background,
           },
         }}
       />
-    </PaperProvider>
+    </GluestackUIProvider>
   );
 }

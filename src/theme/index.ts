@@ -3,7 +3,5 @@
  */
 
 // Design Tokens
-export { colors, typography, spacing, radius, shadows } from './tokens';
+export { colors, radius, shadows, spacing, typography } from './tokens';
 
-// Paper Theme
-export { lightTheme, darkTheme, type AppTheme } from './paperTheme';

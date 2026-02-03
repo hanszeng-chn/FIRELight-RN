@@ -68,15 +68,16 @@
 
 ## 🧩 Components (组件库)
 
-本项目基于 **React Native Paper** 组件库开发。
-需要通过自定义 Theme 来覆盖 Paper 的默认样式，以匹配上述 Design Tokens。
+本项目基于 **Gluestack UI** 组件库开发。
+需要通过自定义 Theme/Token 来覆盖默认样式，以匹配上述 Design Tokens。
+样式体系依赖 NativeWind + Tailwind，用于驱动 Gluestack 的样式生成。
 
 ### 核心组件映射
-- **Button**: 使用 `Paper.Button`，定制 `roundness` 和 `colors`。
-- **Input**: 使用 `Paper.TextInput`，定制 `colors.background` 和 `roundness`。
-- **Card**: 使用 `Paper.Card`。
-- **Text**: 使用 `Paper.Text`，对应 Typography 变体。
-- **Icon**: 使用 `Paper.IconButton` 或 `Vector Icons`。
+- **Button**: 使用 `Button` / `ButtonText`。
+- **Input**: 使用 `Input` / `InputField`。
+- **Card**: 使用 `Box` + `shadow`/`border` 组合实现卡片风格。
+- **Text**: 使用 `Text`，对应 Typography 变体。
+- **Icon**: 使用 `@expo/vector-icons` 或 Gluestack 组件。
 
 ---
 
