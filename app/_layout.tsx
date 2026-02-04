@@ -8,7 +8,7 @@ import { initDatabase } from '@/src/services/database';
 import { useThemeStore } from '@/src/stores/themeStore';
 import { colors } from '@/src/theme';
 
-import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import { GluestackUIProvider } from '@/src/components/ui/gluestack-ui-provider';
 import '../global.css';
 
 // 保持启动页可见，直到我们通知它隐藏
