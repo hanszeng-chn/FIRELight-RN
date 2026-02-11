@@ -1,11 +1,11 @@
 # FIRELight MVP 开发计划
 
-> 基于 PRD-MVP.md 和 DESIGN-SYSTEM.md 制定的详细开发任务清单
+> 基于 PRD-MVP.md 和 design-system 规范制定的详细开发任务清单
 
 ## 📊 项目概览
 
 - **目标**: 实现纯客户端记账系统，满足收支条目管理
-- **技术栈**: React Native + Expo + TypeScript + Zustand + SQLite + Gluestack UI
+- **技术栈**: React Native + Expo + TypeScript + Zustand + SQLite
 - **目标平台**: Android (首发) + Web
 
 ---
@@ -15,18 +15,16 @@
 ### 1.1 依赖安装
 - [x] 安装 Zustand 状态管理库
 - [x] 安装 expo-sqlite 本地数据库
-- [x] 安装 Gluestack UI 组件库
 - [x] 安装 react-native-safe-area-context
 - [x] 安装 uuid 生成唯一 ID
 
 ### 1.2 主题配置
-- [x] 根据 DESIGN-SYSTEM.md 配置 Design Tokens
+- [x] 根据 `docs/design-system/firelight-mvp/MASTER.md` 配置 Design Tokens
   - [x] 颜色系统 (Primary, Success, Danger 等)
   - [x] 排版系统 (Typography)
   - [x] 间距系统 (Spacing)
   - [x] 圆角系统 (Radius)
   - [x] 阴影系统 (Shadows)
-- [x] 配置 Gluestack UI 主题
 - [x] 创建 Light/Dark 主题切换支持
 
 ### 1.3 项目结构
@@ -116,8 +114,9 @@
 ---
 
 ## 🎨 Phase 3: 核心功能 - 首页概览 (Dashboard)
-遵循 DESIGN-SYSTEM.md 设计规范
+遵循 `docs/design-system/firelight-mvp/MASTER.md` 与 `docs/design-system/firelight-mvp/pages/dashboard.md` 设计规范
 遵循 PRD-MVP.md 1.1部分 功能以及交互需求
+路径：`/app/(tabs)/dashboard`
 
 ### 3.1 页面布局
 - [ ] 实现页面 Header (FIRELight 标题)
@@ -140,7 +139,7 @@
 ---
 
 ## ✏️ Phase 4: 核心功能 - 记一笔 (Add Transaction)
-遵循 DESIGN-SYSTEM.md 设计规范
+遵循 `docs/design-system/firelight-mvp/MASTER.md` 与 `docs/design-system/firelight-mvp/pages/add-transaction.md` 设计规范
 遵循 PRD-MVP.md 1.2部分 功能以及交互需求
 
 ### 4.1 页面结构
@@ -168,7 +167,7 @@
 ---
 
 ## 🗂️ Phase 5: 核心功能 - 分类管理 (Category Management)
-遵循 DESIGN-SYSTEM.md 设计规范
+遵循 `docs/design-system/firelight-mvp/MASTER.md` 与 `docs/design-system/firelight-mvp/pages/category-management.md` 设计规范
 遵循 PRD-MVP.md 1.3部分 功能以及交互需求
 
 ### 5.1 页面结构

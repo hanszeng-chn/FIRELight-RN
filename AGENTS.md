@@ -2,7 +2,7 @@
 
 ## 项目定位（SDD）
 - 本仓库是一个 SDD（Specification-Driven Development）项目。
-- 所有功能规格、交互与设计规范都在 `docs/` 目录下（例如 `docs/PRDS/`、`docs/DESIGN-SYSTEM.md`、`docs/PLANS/`）。
+- 所有功能规格、交互与设计规范都在 `docs/` 目录下（例如 `docs/PRDS/`、`docs/design-system/firelight-mvp/`、`docs/PLANS/`）。
 - 开发前先阅读对应规格，优先以文档为准，再进行实现与调整。
 
 ## 项目结构与模块组织
@@ -25,8 +25,12 @@
 - 缩进：2 空格，保持与现有代码一致。
 - 命名：组件/类型用 `PascalCase`，函数/变量用 `camelCase`；路由文件遵循 Expo Router 约定。
 - Lint：使用 `eslint.config.js`（Expo flat config），提交前确保 `npm run lint` 通过。
-- 组件优先复用 `@gluestack-ui/themed` 提供的组件与布局能力，避免重复封装基础控件。
 - NativeWind/Tailwind 配置位于 `tailwind.config.js` 与 `global.css`，新增样式规范请同步维护。
+
+## 组件复用策略
+- 新增 UI 时，优先复用 `gluestack-ui` 已有组件，避免重复造轮子。
+- 若当前仓库未引入目标组件，先使用 Context7 查询 `gluestack-ui` 官方文档确认是否可直接引入。
+- 确认可引入后，先告知用户需要引入的组件与依赖，待用户确认后再继续后续实现。
 
 ## 测试规范
 - 当前未配置自动化测试框架。

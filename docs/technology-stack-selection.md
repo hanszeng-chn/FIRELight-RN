@@ -6,7 +6,6 @@
 | 语言 | TypeScript |
 | 状态管理 | Zustand |
 | 本地存储 | SQLite (expo-sqlite) |
-| UI 组件 | Gluestack UI |
 
 ## 目标平台
 
