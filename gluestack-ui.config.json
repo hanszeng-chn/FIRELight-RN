@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/gluestack/gluestack-ui/main/packages/cli/config/schema.json",
+  "tailwind": {
+    "config": "tailwind.config.js",
+    "css": "global.css"
+  },
+  "app": {
+    "entry": "app/_layout.tsx",
+    "components": "src/components/ui"
+  }
+}
