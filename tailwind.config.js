@@ -1,3 +1,12 @@
+const tokens = require('./src/theme/tokens.json');
+
+const fontSize = Object.fromEntries(
+  Object.entries(tokens.typography.scale).map(([token, value]) => [
+    token,
+    [value.fontSize, { lineHeight: value.lineHeight }],
+  ])
+);
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: process.env.DARK_MODE ? process.env.DARK_MODE : 'class',
@@ -175,32 +184,15 @@ module.exports = {
         },
       },
       fontFamily: {
-        heading: undefined,
-        body: undefined,
-        mono: undefined,
-        jakarta: ['var(--font-plus-jakarta-sans)'],
-        roboto: ['var(--font-roboto)'],
-        code: ['var(--font-source-code-pro)'],
-        inter: ['var(--font-inter)'],
-        'space-mono': ['var(--font-space-mono)'],
+        heading: ['system-ui', '-apple-system', 'sans-serif'],
+        body: ['system-ui', '-apple-system', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
       },
-      fontWeight: {
-        extrablack: '950',
-      },
-      fontSize: {
-        '2xs': '10px',
-      },
-      boxShadow: {
-        'hard-1': '-2px 2px 8px 0px rgba(38, 38, 38, 0.20)',
-        'hard-2': '0px 3px 10px 0px rgba(38, 38, 38, 0.20)',
-        'hard-3': '2px 2px 8px 0px rgba(38, 38, 38, 0.20)',
-        'hard-4': '0px -3px 10px 0px rgba(38, 38, 38, 0.20)',
-        'hard-5': '0px 2px 10px 0px rgba(38, 38, 38, 0.10)',
-        'soft-1': '0px 0px 10px rgba(38, 38, 38, 0.1)',
-        'soft-2': '0px 0px 20px rgba(38, 38, 38, 0.2)',
-        'soft-3': '0px 0px 30px rgba(38, 38, 38, 0.1)',
-        'soft-4': '0px 0px 40px rgba(38, 38, 38, 0.1)',
-      },
+      fontWeight: tokens.typography.fontWeight,
+      borderRadius: tokens.radii,
+      spacing: tokens.spacing,
+      fontSize,
+      boxShadow: tokens.shadows,
     },
   },
 };
