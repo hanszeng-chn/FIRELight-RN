@@ -120,26 +120,30 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
   isLoading: false,
 
   initialize: async () => {
-    // 获取最新有数据的月份
-    const latestMonth = await getLatestTransactionMonth();
+    try {
+      // 获取最新有数据的月份
+      const latestMonth = await getLatestTransactionMonth();
 
-    if (latestMonth) {
-      // 有数据，使用最新的月份
-      set({
-        currentYear: latestMonth.year,
-        currentMonth: latestMonth.month,
-      });
-    } else {
-      // 没有数据，使用当前月份
-      const { year, month } = getCurrentYearMonth();
-      set({
-        currentYear: year,
-        currentMonth: month,
-      });
+      if (latestMonth) {
+        // 有数据，使用最新的月份
+        set({
+          currentYear: latestMonth.year,
+          currentMonth: latestMonth.month,
+        });
+      } else {
+        // 没有数据，使用当前月份
+        const { year, month } = getCurrentYearMonth();
+        set({
+          currentYear: year,
+          currentMonth: month,
+        });
+      }
+
+      // 加载数据
+      await get().loadTransactions();
+    } catch (error) {
+      console.error("[TransactionStore] Failed to initialize:", error);
     }
-
-    // 加载数据
-    await get().loadTransactions();
   },
 
   setMonth: async (year: number, month: number) => {

@@ -36,13 +36,17 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
   currentLedgerId: null,
 
   initialize: async () => {
-    const ledgers = await getAllLedgers();
-    const defaultLedger = ledgers.find((l) => l.is_default);
+    try {
+      const ledgers = await getAllLedgers();
+      const defaultLedger = ledgers.find((l) => l.is_default);
 
-    set({
-      ledgers,
-      currentLedgerId: defaultLedger?.id ?? null,
-    });
+      set({
+        ledgers,
+        currentLedgerId: defaultLedger?.id ?? null,
+      });
+    } catch (error) {
+      console.error("[LedgerStore] Failed to initialize:", error);
+    }
   },
 
   getCurrentLedger: () => {

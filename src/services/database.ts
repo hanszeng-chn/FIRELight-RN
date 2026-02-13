@@ -16,8 +16,11 @@ import * as SQLite from "expo-sqlite";
 const DATABASE_NAME = "firelight.db";
 const SCHEMA_VERSION = 1;
 
-// 数据库实例
-let db: SQLite.SQLiteDatabase | null = null;
+// 数据库实例（通过 globalThis 缓存，防止 Web HMR 重载模块时丢失引用）
+const DB_GLOBAL_KEY = "__firelight_db__";
+const DB_INIT_KEY = "__firelight_db_init__";
+let db: SQLite.SQLiteDatabase | null =
+  (globalThis as Record<string, unknown>)[DB_GLOBAL_KEY] as SQLite.SQLiteDatabase | null ?? null;
 
 /**
  * 获取数据库实例
@@ -31,26 +34,75 @@ export const getDatabase = (): SQLite.SQLiteDatabase => {
 };
 
 /**
+ * 尝试验证已有连接是否可用
+ */
+const isConnectionAlive = async (conn: SQLite.SQLiteDatabase): Promise<boolean> => {
+  try {
+    await conn.getFirstAsync("SELECT 1");
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
  * 初始化数据库
  * App 启动时调用此函数
+ *
+ * 处理三种场景：
+ * 1. 首次打开 — 正常 open + migrate
+ * 2. HMR 热更新 — globalThis 恢复旧连接，验证后直接复用
+ * 3. 旧连接失效 — 关闭旧连接再重新 open
  */
 export const initDatabase = async (): Promise<void> => {
-  console.log("[Database] Initializing...");
+  // 防止并发调用（React StrictMode / HMR 双触发）
+  const g = globalThis as Record<string, unknown>;
+  if (g[DB_INIT_KEY]) {
+    // 已有一个 initDatabase 在跑，等它结束
+    await (g[DB_INIT_KEY] as Promise<void>);
+    return;
+  }
 
-  // 1. 打开数据库
-  db = await SQLite.openDatabaseAsync(DATABASE_NAME);
-  console.log("[Database] Opened database:", DATABASE_NAME);
+  const doInit = async () => {
+    // 1. 如果有缓存连接，尝试复用
+    if (db) {
+      if (await isConnectionAlive(db)) {
+        console.log("[Database] Reusing existing connection");
+        return;
+      }
+      // 连接已失效，尝试关闭释放 OPFS AccessHandle
+      console.warn("[Database] Cached connection is stale, closing...");
+      try { db.closeSync(); } catch { /* ignore */ }
+      db = null;
+      g[DB_GLOBAL_KEY] = null;
+    }
 
-  // 2. 执行迁移
-  await runMigrations();
+    console.log("[Database] Initializing...");
 
-  // 3. 初始化默认账本
-  await initDefaultLedger();
+    // 2. 打开数据库
+    db = await SQLite.openDatabaseAsync(DATABASE_NAME);
+    g[DB_GLOBAL_KEY] = db;
+    console.log("[Database] Opened database:", DATABASE_NAME);
 
-  // 4. 同步系统分类
-  await syncSystemCategories();
+    // 3. 执行迁移
+    await runMigrations();
 
-  console.log("[Database] Initialization complete");
+    // 4. 初始化默认账本
+    await initDefaultLedger();
+
+    // 5. 同步系统分类
+    await syncSystemCategories();
+
+    console.log("[Database] Initialization complete");
+  };
+
+  const promise = doInit();
+  g[DB_INIT_KEY] = promise;
+  try {
+    await promise;
+  } finally {
+    g[DB_INIT_KEY] = null;
+  }
 };
 
 /**
@@ -60,6 +112,7 @@ export const closeDatabase = (): void => {
   if (db) {
     db.closeSync();
     db = null;
+    (globalThis as Record<string, unknown>)[DB_GLOBAL_KEY] = null;
     console.log("[Database] Closed");
   }
 };
