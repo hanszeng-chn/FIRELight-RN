@@ -6,11 +6,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, ButtonIcon, ButtonText } from "@/src/components/ui/button";
 import { Fab, FabIcon, FabLabel } from "@/src/components/ui/fab";
 import { Icon } from "@/src/components/ui/icon";
-import { PageHeader } from "@/src/modules/PageHeader";
 import { useTransactionStore } from "@/src/stores";
 import { FileText, Plus } from "lucide-react-native";
 import { IncomeExpenseSummary } from "./modules/IncomeExpenseSummary";
 import { MonthSelect } from "./modules/MonthSelect";
+import { PageHeader } from "./modules/PageHeader";
 import { SectionTitle } from "./modules/SectionTitle";
 import { TransactionItem } from "./modules/TransactionItem";
 
