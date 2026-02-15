@@ -7,7 +7,9 @@
 import {
   cleanupUnusedCategories as cleanupUnusedCategoriesService,
   createCategory as createCategoryService,
+  deleteCategory as deleteCategoryService,
   getAllCategories,
+  getCategoryTransactionCount,
   isCategoryNameExists,
   reorderCategories as reorderCategoriesService,
   toggleCategoryStatus as toggleCategoryStatusService,
@@ -18,7 +20,13 @@ import type {
   TransactionType,
   UpdateCategoryInput,
 } from "@/src/types";
+import { getAutoCategoryIcon } from "@/src/utils/category";
 import { create } from "zustand";
+
+const MAX_CATEGORY_NAME_LENGTH = 4;
+
+const normalizeCategoryNameForCreate = (name: string): string =>
+  Array.from(name.trim()).slice(0, MAX_CATEGORY_NAME_LENGTH).join("");
 
 /**
  * 创建分类的输入参数
@@ -95,6 +103,19 @@ interface CategoryState {
     type: TransactionType,
     excludeId?: string,
   ) => Promise<boolean>;
+
+  /**
+   * 删除自定义分类
+   */
+  deleteCategory: (id: string) => Promise<boolean>;
+
+  /**
+   * 按规则停用或删除分类
+   * @returns 操作结果：deleted | deactivated | unchanged
+   */
+  deactivateOrDeleteCategory: (
+    category: Category,
+  ) => Promise<"deleted" | "deactivated" | "unchanged">;
 }
 
 export const useCategoryStore = create<CategoryState>((set, get) => ({
@@ -128,23 +149,24 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
   addCategory: async (params: CreateCategoryParams) => {
     const { name, type } = params;
+    const normalizedName = normalizeCategoryNameForCreate(name);
 
     // 校验名称
-    if (!name.trim()) {
+    if (!normalizedName) {
       throw new Error("分类名称不能为空");
     }
 
     // 检查名称重复
-    if (await isCategoryNameExists(name.trim(), type)) {
+    if (await isCategoryNameExists(normalizedName, type)) {
       throw new Error("分类名称已存在");
     }
 
     // 自动生成图标（取首字符）
-    const icon = name.trim().charAt(0);
+    const icon = getAutoCategoryIcon(normalizedName);
 
     // 创建分类
     const category = await createCategoryService({
-      name: name.trim(),
+      name: normalizedName,
       icon,
       type,
       is_active: true,
@@ -179,7 +201,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       // 更新图标为新名称首字符
       input.name = trimmedName;
-      input.icon = trimmedName.charAt(0);
+      input.icon = getAutoCategoryIcon(trimmedName);
     }
 
     const result = await updateCategoryService(id, input);
@@ -223,5 +245,36 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     excludeId?: string,
   ) => {
     return await isCategoryNameExists(name.trim(), type, excludeId);
+  },
+
+  deleteCategory: async (id: string) => {
+    const result = await deleteCategoryService(id);
+    if (result) {
+      await get().loadCategories();
+    }
+    return result;
+  },
+
+  deactivateOrDeleteCategory: async (category: Category) => {
+    if (!category.is_active) {
+      return "unchanged";
+    }
+
+    if (category.is_system) {
+      await toggleCategoryStatusService(category.id);
+      await get().loadCategories();
+      return "deactivated";
+    }
+
+    const transactionCount = await getCategoryTransactionCount(category.id);
+    if (transactionCount > 0) {
+      await toggleCategoryStatusService(category.id);
+      await get().loadCategories();
+      return "deactivated";
+    }
+
+    await deleteCategoryService(category.id);
+    await get().loadCategories();
+    return "deleted";
   },
 }));

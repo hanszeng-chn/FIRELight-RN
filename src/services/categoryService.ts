@@ -14,6 +14,11 @@ import type {
 import { generateUUID } from "@/src/utils/uuid";
 import { getDatabase } from "./database";
 
+const MAX_CATEGORY_NAME_LENGTH = 4;
+
+const truncateCategoryName = (name: string): string =>
+  Array.from(name).slice(0, MAX_CATEGORY_NAME_LENGTH).join("");
+
 /**
  * SQLite 返回的原始分类数据（布尔值为 0/1）
  */
@@ -98,6 +103,7 @@ export const createCategory = async (
   const db = getDatabase();
   const now = new Date().toISOString();
   const id = generateUUID();
+  const normalizedName = truncateCategoryName(input.name);
 
   // 获取当前最大 sort_order
   const maxSort = await db.getFirstAsync<{ max_sort: number | null }>(
@@ -111,7 +117,7 @@ export const createCategory = async (
      VALUES (?, ?, ?, ?, 0, ?, ?, 0, ?, ?)`,
     [
       id,
-      input.name,
+      normalizedName,
       input.icon,
       input.type,
       input.is_active ? 1 : 0,
@@ -123,7 +129,7 @@ export const createCategory = async (
 
   return {
     id,
-    name: input.name,
+    name: normalizedName,
     icon: input.icon,
     type: input.type,
     is_system: false,
@@ -255,6 +261,20 @@ export const deleteCategory = async (id: string): Promise<boolean> => {
 
   await db.runAsync("DELETE FROM categories WHERE id = ?", [id]);
   return true;
+};
+
+/**
+ * 获取分类关联的交易数量
+ */
+export const getCategoryTransactionCount = async (
+  id: string,
+): Promise<number> => {
+  const db = getDatabase();
+  const result = await db.getFirstAsync<{ count: number }>(
+    "SELECT COUNT(*) as count FROM transactions WHERE category_id = ?",
+    [id],
+  );
+  return result?.count ?? 0;
 };
 
 /**
