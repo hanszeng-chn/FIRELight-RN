@@ -10,6 +10,7 @@ type NumberPadProps = {
   amountStr: string;
   note: string;
   date: string;
+  submitLabel?: string;
   onAmountChange: (str: string) => void;
   onNoteChange: (str: string) => void;
   onDateChange: (date: string) => void;
@@ -66,6 +67,7 @@ export function NumberPad({
   amountStr,
   note,
   date,
+  submitLabel = "完成",
   onAmountChange,
   onNoteChange,
   onDateChange,
@@ -173,14 +175,14 @@ export function NumberPad({
             onPress={canSubmit ? onSubmit : undefined}
             disabled={!canSubmit}
             accessibilityRole="button"
-            accessibilityLabel="完成"
+            accessibilityLabel={submitLabel}
           >
             <Text
               className={`text-lg font-semibold ${
                 canSubmit ? "text-white" : "text-typography-400"
               }`}
             >
-              完成
+              {submitLabel}
             </Text>
           </Pressable>
         </View>
@@ -192,7 +194,6 @@ export function NumberPad({
         onChange={handleDateChange}
         isOpen={showDatePicker}
         onClose={() => setShowDatePicker(false)}
-        maxDate={new Date()}
       />
     </View>
   );

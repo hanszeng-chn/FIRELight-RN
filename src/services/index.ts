@@ -18,7 +18,7 @@ export {
 export {
     cleanupUnusedCategories, createCategory, deleteCategory, getActiveCategories,
     getAllCategories,
-    getCategoryById, isCategoryNameExists, reorderCategories, toggleCategoryStatus, updateCategory
+    getCategoryById, getCategoryTransactionCount, isCategoryNameExists, reorderCategories, toggleCategoryStatus, updateCategory
 } from './categoryService';
 
 // 交易服务
@@ -33,4 +33,3 @@ export type {
     MonthlyStats, TransactionFilter,
     TransactionsByDate
 } from './transactionService';
-

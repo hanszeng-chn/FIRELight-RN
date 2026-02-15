@@ -59,6 +59,30 @@ export interface MonthlyStats {
   transactionCount: number;
 }
 
+const cleanupInactiveCustomCategoryIfUnused = async (
+  categoryId: string
+): Promise<void> => {
+  const db = getDatabase();
+  const category = await db.getFirstAsync<{
+    id: string;
+    is_system: number;
+    is_active: number;
+  }>('SELECT id, is_system, is_active FROM categories WHERE id = ?', [categoryId]);
+
+  if (!category || category.is_system !== 0 || category.is_active !== 0) {
+    return;
+  }
+
+  const countResult = await db.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM transactions WHERE category_id = ?',
+    [categoryId]
+  );
+
+  if ((countResult?.count ?? 0) === 0) {
+    await db.runAsync('DELETE FROM categories WHERE id = ?', [categoryId]);
+  }
+};
+
 /**
  * 创建交易
  */
@@ -253,6 +277,10 @@ export const updateTransaction = async (
   input: UpdateTransactionInput
 ): Promise<Transaction | null> => {
   const db = getDatabase();
+  const existing = await getTransactionById(id);
+  if (!existing) {
+    return null;
+  }
   const now = new Date().toISOString();
 
   const fields: string[] = [];
@@ -292,6 +320,11 @@ export const updateTransaction = async (
     values
   );
 
+  // 若编辑导致原分类失去最后一条关联记录，按规则清理
+  if (input.category_id !== undefined && input.category_id !== existing.category_id) {
+    await cleanupInactiveCustomCategoryIfUnused(existing.category_id);
+  }
+
   return getTransactionById(id);
 };
 
@@ -307,6 +340,10 @@ export const deleteTransaction = async (id: string): Promise<boolean> => {
   }
 
   await db.runAsync('DELETE FROM transactions WHERE id = ?', [id]);
+
+  // PRD 规则：删除后清理「自定义 + 已停用 + 无关联交易」类别
+  await cleanupInactiveCustomCategoryIfUnused(existing.category_id);
+
   return true;
 };
 

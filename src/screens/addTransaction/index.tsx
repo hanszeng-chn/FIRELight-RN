@@ -1,9 +1,16 @@
+import { BackPageHeader } from "@/src/components/page-header/BackPageHeader";
+import {
+  SwitchTabs,
+  type SwitchTabItem,
+} from "@/src/components/tabs/SwitchTabs";
+import { Toast, ToastTitle, useToast } from "@/src/components/ui/toast";
+import { getCategoryTransactionCount, getTransactionById } from "@/src/services";
+import { appAlert } from "@/src/stores/alertDialogStore";
 import { useCategoryStore, useTransactionStore } from "@/src/stores";
 import type { Category, TransactionType } from "@/src/types";
-import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CategoryGrid } from "./modules/CategoryGrid";
@@ -14,23 +21,35 @@ function getTodayISO(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-const TABS: { type: TransactionType; label: string }[] = [
-  { type: "expense", label: "支出" },
-  { type: "income", label: "收入" },
+const TABS: SwitchTabItem<TransactionType>[] = [
+  { key: "expense", label: "支出" },
+  { key: "income", label: "收入" },
 ];
 
 export default function AddTransactionScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    mode?: string | string[];
+    id?: string | string[];
+  }>();
+  const toast = useToast();
 
   // Stores
   const loadCategories = useCategoryStore((s) => s.loadCategories);
   const expenseCategories = useCategoryStore((s) => s.expenseCategories);
   const incomeCategories = useCategoryStore((s) => s.incomeCategories);
   const addTransaction = useTransactionStore((s) => s.addTransaction);
+  const updateTransaction = useTransactionStore((s) => s.updateTransaction);
+
+  const normalizeParam = (value?: string | string[]) =>
+    Array.isArray(value) ? value[0] : value;
+  const mode = normalizeParam(params.mode);
+  const editingTransactionId = normalizeParam(params.id);
+  const isEditMode = mode === "edit" && Boolean(editingTransactionId);
 
   // Local state
   const [activeType, setActiveType] = useState<TransactionType>("expense");
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null,
   );
   const [amountStr, setAmountStr] = useState("");
@@ -38,127 +57,291 @@ export default function AddTransactionScreen() {
   const [date, setDate] = useState(getTodayISO);
   const [isInputVisible, setIsInputVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [initialForm, setInitialForm] = useState<{
+    type: TransactionType;
+    categoryId: string | null;
+    amountStr: string;
+    note: string;
+    date: string;
+  } | null>(null);
+
+  const showToast = useCallback(
+    (message: string, action: "error" | "warning" | "success" = "error") => {
+      toast.show({
+        placement: "top",
+        duration: 1800,
+        render: () => (
+          <Toast action={action} variant="solid">
+            <ToastTitle>{message}</ToastTitle>
+          </Toast>
+        ),
+      });
+    },
+    [toast],
+  );
 
   // Load categories on mount
   useEffect(() => {
     void loadCategories();
   }, [loadCategories]);
 
+  const allCategories = useMemo(
+    () => [...expenseCategories, ...incomeCategories],
+    [expenseCategories, incomeCategories],
+  );
+
+  const selectedCategory = useMemo(
+    () =>
+      allCategories.find((category) => category.id === selectedCategoryId) ??
+      null,
+    [allCategories, selectedCategoryId],
+  );
+
+  const editingOriginalCategoryId = isEditMode
+    ? (initialForm?.categoryId ?? null)
+    : null;
+
+  const editingOriginalCategory = useMemo(
+    () =>
+      allCategories.find((category) => category.id === editingOriginalCategoryId) ??
+      null,
+    [allCategories, editingOriginalCategoryId],
+  );
+
   const categories = useMemo(() => {
     const all = activeType === "expense" ? expenseCategories : incomeCategories;
-    return all.filter((c) => c.is_active);
-  }, [activeType, expenseCategories, incomeCategories]);
+    return all
+      .filter((category) => {
+        if (category.is_active) {
+          return true;
+        }
+        return (
+          isEditMode &&
+          editingOriginalCategory &&
+          editingOriginalCategory.type === activeType &&
+          category.id === editingOriginalCategory.id
+        );
+      })
+      .sort((a, b) => a.sort_order - b.sort_order);
+  }, [
+    activeType,
+    editingOriginalCategory,
+    expenseCategories,
+    incomeCategories,
+    isEditMode,
+  ]);
 
-  const hasUnsavedInput = amountStr !== "" || note !== "";
+  useEffect(() => {
+    if (!isEditMode && selectedCategory && !selectedCategory.is_active) {
+      setSelectedCategoryId(null);
+      setIsInputVisible(false);
+    }
+  }, [isEditMode, selectedCategory]);
+
+  useEffect(() => {
+    if (isEditMode || initialForm) {
+      return;
+    }
+    setInitialForm({
+      type: "expense",
+      categoryId: null,
+      amountStr: "",
+      note: "",
+      date: getTodayISO(),
+    });
+  }, [isEditMode, initialForm]);
+
+  useEffect(() => {
+    if (!isEditMode || !editingTransactionId) {
+      return;
+    }
+
+    let cancelled = false;
+    const loadEditingTransaction = async () => {
+      try {
+        const transaction = await getTransactionById(editingTransactionId);
+        if (!transaction) {
+          showToast("未找到该条目");
+          router.back();
+          return;
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        const nextAmountStr = String(transaction.amount);
+        setActiveType(transaction.type);
+        setSelectedCategoryId(transaction.category_id);
+        setAmountStr(nextAmountStr);
+        setNote(transaction.note ?? "");
+        setDate(transaction.date);
+        setIsInputVisible(true);
+        setInitialForm({
+          type: transaction.type,
+          categoryId: transaction.category_id,
+          amountStr: nextAmountStr,
+          note: transaction.note ?? "",
+          date: transaction.date,
+        });
+      } catch (error) {
+        console.error("[AddTransaction] Failed to load transaction:", error);
+        showToast("加载失败，请重试");
+        router.back();
+      }
+    };
+
+    void loadEditingTransaction();
+    return () => {
+      cancelled = true;
+    };
+  }, [editingTransactionId, isEditMode, router, showToast]);
 
   // Handlers
   const handleBack = useCallback(() => {
-    if (hasUnsavedInput) {
-      Alert.alert("放弃本次输入？", "已输入的内容将不会保存。", [
-        { text: "继续编辑", style: "cancel" },
-        {
-          text: "放弃",
-          style: "destructive",
-          onPress: () => router.back(),
-        },
-      ]);
-    } else {
-      router.back();
-    }
-  }, [hasUnsavedInput, router]);
+    router.back();
+  }, [router]);
 
-  const handleTabChange = useCallback((type: TransactionType) => {
-    setActiveType(type);
-    setSelectedCategory(null);
-    setIsInputVisible(false);
-    setAmountStr("");
-    setNote("");
-  }, []);
+  const handleTabChange = useCallback(
+    (type: TransactionType) => {
+      setActiveType(type);
+      setSelectedCategoryId(null);
+      setIsInputVisible(false);
+      if (!isEditMode) {
+        setAmountStr("");
+        setNote("");
+      }
+    },
+    [isEditMode],
+  );
 
   const handleCategorySelect = useCallback((category: Category) => {
-    setSelectedCategory(category);
+    setSelectedCategoryId(category.id);
     setIsInputVisible(true);
   }, []);
 
+  const handleOpenCategoryManagement = useCallback(() => {
+    router.push({
+      pathname: "/category-management",
+      params: { type: activeType },
+    });
+  }, [activeType, router]);
+
   const handleSubmit = useCallback(async () => {
-    if (!selectedCategory || isSubmitting) return;
+    if (!selectedCategoryId || isSubmitting) return;
 
     const amount = parseFloat(amountStr);
     if (!(amount > 0)) return;
 
-    setIsSubmitting(true);
-    try {
-      await addTransaction({
-        type: activeType,
-        amount,
-        category_id: selectedCategory.id,
-        date,
-        note: note.trim() || undefined,
-      });
-      router.back();
-    } catch (error) {
-      Alert.alert(
-        "保存失败",
-        error instanceof Error ? error.message : "请重试",
+    const submitTransaction = async () => {
+      setIsSubmitting(true);
+      try {
+        if (isEditMode && editingTransactionId) {
+          const updated = await updateTransaction(editingTransactionId, {
+            type: activeType,
+            amount,
+            category_id: selectedCategoryId,
+            date,
+            note: note.trim() || "",
+          });
+          if (!updated) {
+            throw new Error("更新失败，请重试");
+          }
+        } else {
+          await addTransaction({
+            type: activeType,
+            amount,
+            category_id: selectedCategoryId,
+            date,
+            note: note.trim() || undefined,
+          });
+        }
+        router.back();
+      } catch (error) {
+        showToast(
+          error instanceof Error
+            ? error.message
+            : isEditMode
+              ? "更新失败，请重试"
+              : "保存失败，请重试",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    if (
+      isEditMode &&
+      editingOriginalCategoryId &&
+      selectedCategoryId !== editingOriginalCategoryId
+    ) {
+      const previousCategory = allCategories.find(
+        (category) => category.id === editingOriginalCategoryId,
       );
-    } finally {
-      setIsSubmitting(false);
+
+      if (previousCategory && !previousCategory.is_system && !previousCategory.is_active) {
+        try {
+          const count = await getCategoryTransactionCount(previousCategory.id);
+          if (count <= 1) {
+            const categoryName = previousCategory.name.trim() || "该分类";
+            appAlert(
+              "确认修改",
+              `修改后将删除停用自定义分类「${categoryName}」，是否继续？`,
+              [
+                { text: "取消", style: "cancel" },
+                {
+                  text: "确认修改",
+                  style: "destructive",
+                  onPress: () => {
+                    void submitTransaction();
+                  },
+                },
+              ],
+            );
+            return;
+          }
+        } catch (error) {
+          console.error(
+            "[AddTransaction] Failed to check category tx count before update:",
+            error,
+          );
+          showToast("校验分类失败，请重试");
+          return;
+        }
+      }
     }
+
+    await submitTransaction();
   }, [
-    selectedCategory,
+    selectedCategoryId,
     isSubmitting,
     amountStr,
-    addTransaction,
+    isEditMode,
+    editingOriginalCategoryId,
+    allCategories,
+    editingTransactionId,
+    updateTransaction,
     activeType,
     date,
     note,
+    addTransaction,
     router,
+    showToast,
   ]);
 
   return (
     <SafeAreaView className="flex-1 bg-background-100">
-      {/* Header */}
-      <View className="flex-row items-center px-4 py-2.5">
-        <Pressable
-          className="h-8 w-10 items-start justify-center"
-          onPress={handleBack}
-          accessibilityRole="button"
-          accessibilityLabel="返回"
-        >
-          <ChevronLeft size={24} color="#374151" />
-        </Pressable>
-
-        <View className="flex-1 flex-row justify-center gap-6">
-          {TABS.map((tab) => {
-            const isActive = activeType === tab.type;
-            return (
-              <Pressable
-                key={tab.type}
-                className="items-center"
-                onPress={() => handleTabChange(tab.type)}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-                accessibilityLabel={tab.label}
-              >
-                <Text
-                  className={`text-base leading-7 ${
-                    isActive
-                      ? "font-semibold text-typography-900"
-                      : "font-medium text-typography-400"
-                  }`}
-                >
-                  {tab.label}
-                </Text>
-                <View
-                  className={`mt-0.5 h-0.5 w-8 rounded-full ${isActive ? "bg-primary-600" : "bg-transparent"}`}
-                />
-              </Pressable>
-            );
-          })}
-        </View>
-        {/* Right spacer to balance the back button */}
-        <View className="w-10" />
-      </View>
+      <BackPageHeader
+        onBack={handleBack}
+        center={
+          <SwitchTabs
+            tabs={TABS}
+            activeKey={activeType}
+            onChange={handleTabChange}
+            variant="underline"
+          />
+        }
+      />
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
@@ -166,15 +349,16 @@ export default function AddTransactionScreen() {
       >
         <CategoryGrid
           categories={categories}
-          selectedId={selectedCategory?.id ?? null}
+          selectedId={selectedCategoryId}
           onSelect={handleCategorySelect}
+          onOpenSettings={handleOpenCategoryManagement}
         />
       </ScrollView>
 
       {/* Number Pad — fixed at bottom, visible after selecting a category */}
-      {isInputVisible && selectedCategory ? (
+      {isInputVisible && selectedCategoryId ? (
         <NumberPad
-          categoryName={selectedCategory.name}
+          categoryName={selectedCategory?.name ?? ""}
           amountStr={amountStr}
           note={note}
           date={date}
