@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Appearance, Text, View, useColorScheme } from "react-native";
 
 import { GluestackUIProvider } from "@/src/components/ui/gluestack-ui-provider";
+import { GlobalAlertDialog } from "@/src/components/ui/alert-dialog/GlobalAlertDialog";
 import { initDatabase } from "@/src/services/database";
 import { useThemeStore } from "@/src/stores/themeStore";
 
@@ -97,20 +98,29 @@ export default function RootLayout() {
 
   return (
     <GluestackUIProvider mode={isDark ? "dark" : "light"}>
-      <Stack>
-        <Stack.Screen
-          name="index"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="add-transaction"
-          options={{
-            headerShown: false,
-          }}
-        />
-      </Stack>
+      <>
+        <Stack>
+          <Stack.Screen
+            name="index"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="add-transaction"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="category-management"
+            options={{
+              headerShown: false,
+            }}
+          />
+        </Stack>
+        <GlobalAlertDialog />
+      </>
     </GluestackUIProvider>
   );
 }
