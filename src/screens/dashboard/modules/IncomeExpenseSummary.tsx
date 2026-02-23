@@ -15,7 +15,9 @@ function MetricItem({ label, value }: { label: string; value: string }) {
 
   return (
     <View className="flex-1 px-5 py-3">
-      <Text className={`text-xl font-semibold ${valueTextClassName}`}>{value}</Text>
+      <Text className={`text-xl font-semibold ${valueTextClassName}`}>
+        {value}
+      </Text>
       <Text className="text-sm text-typography-500">{label}</Text>
     </View>
   );

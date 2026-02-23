@@ -3,7 +3,7 @@ import React from 'react';
 import { createMenu } from '@gluestack-ui/core/menu/creator';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
-import { Pressable, Text, View, ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import {
   Motion,
   AnimatePresence,
@@ -83,6 +83,8 @@ const BackdropPressable = React.forwardRef<
   return (
     <Pressable
       ref={ref}
+      pointerEvents="auto"
+      style={StyleSheet.absoluteFillObject}
       className={menuBackdropStyle({
         class: className,
       })}
