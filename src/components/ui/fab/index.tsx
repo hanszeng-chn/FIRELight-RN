@@ -2,13 +2,14 @@
 import React from 'react';
 import { createFab } from '@gluestack-ui/core/fab/creator';
 import { Pressable, Text } from 'react-native';
-import { tva } from '@gluestack-ui/utils/nativewind-utils';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+  tva,
   withStyleContext,
   useStyleContext,
+  type VariantProps,
 } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
-import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
 
 const SCOPE = 'FAB';
@@ -117,14 +118,22 @@ type IFabProps = Omit<React.ComponentPropsWithoutRef<typeof UIFab>, 'context'> &
 
 const Fab = React.forwardRef<React.ComponentRef<typeof UIFab>, IFabProps>(
   function Fab(
-    { size = 'md', placement = 'bottom right', className, ...props },
+    { size = 'md', placement = 'bottom right', className, style, ...props },
     ref
   ) {
+    const insets = useSafeAreaInsets();
+    const safeAreaStyle = placement.startsWith('bottom')
+      ? { marginBottom: insets.bottom }
+      : placement.startsWith('top')
+      ? { marginTop: insets.top }
+      : undefined;
+
     return (
       <UIFab
         ref={ref}
         {...props}
         className={fabStyle({ size, placement, class: className })}
+        style={safeAreaStyle ? [safeAreaStyle, style] : style}
         context={{ size }}
       />
     );

@@ -4,6 +4,7 @@ import { Input, InputField } from "@/src/components/ui/input";
 import { Calendar, Delete } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type NumberPadProps = {
   categoryName: string;
@@ -96,7 +97,10 @@ export function NumberPad({
   );
 
   return (
-    <View className="rounded-tl-lg rounded-tr-lg bg-background-0 shadow-hard-3">
+    <SafeAreaView
+      edges={["bottom"]}
+      className="rounded-tl-lg rounded-tr-lg bg-background-0 shadow-hard-3"
+    >
       {/* Amount display */}
       <View className="px-5 pb-2 pt-3">
         <Text className="text-3xl font-bold text-typography-900">
@@ -195,6 +199,6 @@ export function NumberPad({
         isOpen={showDatePicker}
         onClose={() => setShowDatePicker(false)}
       />
-    </View>
+    </SafeAreaView>
   );
 }

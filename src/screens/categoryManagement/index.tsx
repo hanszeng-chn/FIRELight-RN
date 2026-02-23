@@ -333,7 +333,7 @@ export default function CategoryManagementScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-background-100">
+    <SafeAreaView edges={["top"]} className="flex-1 bg-background-100">
       <BackPageHeader onBack={() => router.back()} title="类别设置" />
 
       <View className="px-4 pb-2">
@@ -491,7 +491,10 @@ export default function CategoryManagementScreen() {
         </View>
       </ScrollView>
 
-      <View className="border-t border-outline-100 bg-background-0 px-4 py-2 shadow-soft-1">
+      <SafeAreaView
+        edges={["bottom"]}
+        className="border-t border-outline-100 bg-background-0 px-4 py-2 shadow-soft-1"
+      >
         <Pressable
           className="items-center justify-center py-1"
           onPress={openCreateEditor}
@@ -505,7 +508,7 @@ export default function CategoryManagementScreen() {
             </Text>
           </View>
         </Pressable>
-      </View>
+      </SafeAreaView>
 
       <Actionsheet isOpen={editorVisible} onClose={closeEditor}>
         <ActionsheetBackdrop />

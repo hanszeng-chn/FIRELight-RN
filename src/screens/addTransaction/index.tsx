@@ -4,9 +4,12 @@ import {
   type SwitchTabItem,
 } from "@/src/components/tabs/SwitchTabs";
 import { Toast, ToastTitle, useToast } from "@/src/components/ui/toast";
-import { getCategoryTransactionCount, getTransactionById } from "@/src/services";
-import { appAlert } from "@/src/stores/alertDialogStore";
+import {
+  getCategoryTransactionCount,
+  getTransactionById,
+} from "@/src/services";
 import { useCategoryStore, useTransactionStore } from "@/src/stores";
+import { appAlert } from "@/src/stores/alertDialogStore";
 import type { Category, TransactionType } from "@/src/types";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -103,8 +106,9 @@ export default function AddTransactionScreen() {
 
   const editingOriginalCategory = useMemo(
     () =>
-      allCategories.find((category) => category.id === editingOriginalCategoryId) ??
-      null,
+      allCategories.find(
+        (category) => category.id === editingOriginalCategoryId,
+      ) ?? null,
     [allCategories, editingOriginalCategoryId],
   );
 
@@ -279,7 +283,11 @@ export default function AddTransactionScreen() {
         (category) => category.id === editingOriginalCategoryId,
       );
 
-      if (previousCategory && !previousCategory.is_system && !previousCategory.is_active) {
+      if (
+        previousCategory &&
+        !previousCategory.is_system &&
+        !previousCategory.is_active
+      ) {
         try {
           const count = await getCategoryTransactionCount(previousCategory.id);
           if (count <= 1) {
@@ -330,7 +338,7 @@ export default function AddTransactionScreen() {
   ]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background-100">
+    <SafeAreaView edges={["top"]} className="flex-1 bg-background-100">
       <BackPageHeader
         onBack={handleBack}
         center={

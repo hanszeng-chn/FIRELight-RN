@@ -14,6 +14,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { PrimitiveIcon, UIIcon } from '@gluestack-ui/core/icon/creator';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tva } from '@gluestack-ui/utils/nativewind-utils';
 import type { VariantProps } from '@gluestack-ui/utils/nativewind-utils';
 import { cssInterop } from 'nativewind';
@@ -234,6 +235,7 @@ type IActionsheetProps = VariantProps<typeof actionsheetStyle> &
 type IActionsheetContentProps = VariantProps<typeof actionsheetContentStyle> &
   React.ComponentPropsWithoutRef<typeof UIActionsheet.Content> & {
     className?: string;
+    disableBottomSafeAreaInset?: boolean;
   };
 
 type IActionsheetItemProps = VariantProps<typeof actionsheetItemStyle> &
@@ -306,7 +308,13 @@ const Actionsheet = React.forwardRef<
 const ActionsheetContent = React.forwardRef<
   React.ComponentRef<typeof UIActionsheet.Content>,
   IActionsheetContentProps
->(function ActionsheetContent({ className, ...props }, ref) {
+>(function ActionsheetContent(
+  { className, disableBottomSafeAreaInset = false, children, ...props },
+  ref
+) {
+  const insets = useSafeAreaInsets();
+  const bottomInset = disableBottomSafeAreaInset ? 0 : insets.bottom;
+
   return (
     <UIActionsheet.Content
       className={actionsheetContentStyle({
@@ -314,7 +322,10 @@ const ActionsheetContent = React.forwardRef<
       })}
       ref={ref}
       {...props}
-    />
+    >
+      {children}
+      {bottomInset > 0 ? <View style={{ height: bottomInset }} /> : null}
+    </UIActionsheet.Content>
   );
 });
 
